@@ -1,0 +1,33 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "farming-assist-7bb6a",
+          "appId": "1:434367163208:android:5590884613336fb71c217d",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "farming-assist-7bb6a",
+          "configurations": {
+            "android": "1:434367163208:android:5590884613336fb71c217d",
+            "ios": "1:434367163208:ios:e44135421c97ab491c217d",
+            "macos": "1:434367163208:ios:e44135421c97ab491c217d",
+            "web": "1:434367163208:web:d96859a698ea51d91c217d",
+            "windows": "1:434367163208:web:0966621be49561db1c217d"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  }
+}

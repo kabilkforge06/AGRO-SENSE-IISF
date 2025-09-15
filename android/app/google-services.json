@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "434367163208",
+    "project_id": "farming-assist-7bb6a",
+    "storage_bucket": "farming-assist-7bb6a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:434367163208:android:5590884613336fb71c217d",
+        "android_client_info": {
+          "package_name": "com.example.farming_assist"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDCpXoKo8iFOQSSeJvjt7iitMVpTTbuvbw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
