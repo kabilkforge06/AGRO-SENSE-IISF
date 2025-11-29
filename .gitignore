@@ -43,3 +43,24 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/build/
+/android/app/build/
+
+# Build directories
+build/
+**/build/
+
+# iOS build artifacts
+/ios/build/
+
+# Windows build artifacts
+/windows/build/
+
+# Linux build artifacts  
+/linux/build/
+
+# macOS build artifacts
+/macos/build/
+
+# Web build artifacts
+/web/build/

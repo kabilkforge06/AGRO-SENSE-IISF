@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.farming_assist"
+    namespace = "com.agrosense.farmingassist"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -24,7 +24,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.farming_assist"
+        applicationId = "com.agrosense.farmingassist"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -44,4 +44,35 @@ android {
 
 flutter {
     source = "../.."
+}
+
+// Create a task to copy APK to Flutter expected location
+tasks.register("copyApkToFlutterLocation") {
+    doLast {
+        val buildOutputs = file("${rootProject.projectDir}/../build/app/outputs")
+        val flutterApkDir = file("${buildOutputs}/flutter-apk")
+        flutterApkDir.mkdirs()
+        
+        // Copy from both possible locations
+        copy {
+            from("${buildDir}/outputs/apk/debug")
+            into(flutterApkDir)
+            include("*.apk")
+        }
+        copy {
+            from("${buildDir}/outputs/flutter-apk")
+            into(flutterApkDir)
+            include("*.apk")
+        }
+    }
+}
+
+// Make the copy task run after any assemble task
+tasks.matching { it.name.startsWith("assemble") }.configureEach {
+    finalizedBy("copyApkToFlutterLocation")
+}
+
+dependencies {
+    implementation("androidx.concurrent:concurrent-futures:1.2.0")
+    implementation("androidx.concurrent:concurrent-futures-ktx:1.2.0")
 }

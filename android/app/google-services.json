@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "434367163208",
-    "project_id": "farming-assist-7bb6a",
-    "storage_bucket": "farming-assist-7bb6a.firebasestorage.app"
+    "project_number": "988711799748",
+    "project_id": "agro-sense-70d67",
+    "storage_bucket": "agro-sense-70d67.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:434367163208:android:5590884613336fb71c217d",
+        "mobilesdk_app_id": "1:988711799748:android:ba5b3d33e064574185b291",
         "android_client_info": {
-          "package_name": "com.example.farming_assist"
+          "package_name": "com.agrosense.farmingassist"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDCpXoKo8iFOQSSeJvjt7iitMVpTTbuvbw"
+          "current_key": "AIzaSyAoUpa4M1H3Dtcc1lyDPEhBPkAO7-MdRvw"
         }
       ],
       "services": {

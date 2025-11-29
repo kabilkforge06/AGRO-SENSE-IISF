@@ -1,184 +1,237 @@
-import 'dart:math';
 import 'dart:developer' as developer;
 import 'location_service.dart';
 import 'package:geolocator/geolocator.dart';
+import 'market_api_service.dart';
 
 class MarketService {
-  // Get user's nearby markets based on GPS location
+  final MarketApiService _apiService = MarketApiService();
+
+  /// Get user's nearby markets based on GPS location
+  /// Uses real Data.gov.in API to fetch markets by state/district
   Future<List<String>> getNearbyMarkets() async {
     try {
       Position? position = await LocationService.getCurrentLocation();
+
       if (position == null) {
-        return _getDefaultMarkets();
+        // Fallback: get markets from major states if location unavailable
+        return await _getFallbackMarkets();
       }
 
-      // In a real app, this would query a markets database
-      // For demo, we'll simulate location-based markets
-      return _getMarketsForLocation(position.latitude, position.longitude);
+      // In production, you would use reverse geocoding to get state/district
+      // from coordinates. For now, we'll use a simplified approach.
+      String state = await _getStateFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      // Fetch markets from Data.gov.in API based on location
+      final markets = await _apiService.fetchMarketsByLocation(state: state);
+
+      // Limit to nearby markets (first 10)
+      return markets.take(10).toList();
     } catch (e) {
       developer.log('Error getting nearby markets: $e');
-      return _getDefaultMarkets();
+      return await _getFallbackMarkets();
     }
   }
 
-  List<String> _getDefaultMarkets() {
-    return [
-      'Delhi - APMC Market',
-      'Mumbai - Vashi Market',
-      'Bangalore - KR Market',
-      'Chennai - Koyambedu Market',
-      'Kolkata - Posta Market',
-    ];
+  /// Fallback method to get markets from major states when location fails
+  Future<List<String>> _getFallbackMarkets() async {
+    try {
+      // Get all available markets and take first 10 as fallback
+      final allMarkets = await _apiService.fetchAllMarkets();
+      return allMarkets.take(10).toList();
+    } catch (e) {
+      developer.log('Error in fallback markets: $e');
+      // Last resort: return empty list
+      return [];
+    }
   }
 
-  List<String> _getMarketsForLocation(double lat, double lon) {
-    // Simulate location-based market selection
-    final allMarkets = [
-      'Delhi - APMC Market',
-      'Gurgaon Mandi',
-      'Noida Agricultural Market',
-      'Mumbai - Vashi Market',
-      'Pune Agricultural Market',
-      'Bangalore - KR Market',
-      'Mysore Mandi',
-      'Chennai - Koyambedu Market',
-      'Coimbatore Market',
-      'Kolkata - Posta Market',
-      'Burdwan Mandi',
-      'Hyderabad Market',
-      'Vijayawada Mandi',
-      'Ahmedabad Market',
-      'Vadodara Mandi',
-      'Jaipur Agricultural Market',
-      'Jodhpur Mandi',
-      'Lucknow Market',
-      'Kanpur Mandi',
-      'Patna Agricultural Market',
-    ];
-
-    // Return random selection based on location (in real app, use actual proximity)
-    final random = Random();
-    allMarkets.shuffle(random);
-    return allMarkets.take(8).toList();
+  /// Simple state detection from coordinates
+  /// In production, use proper reverse geocoding service
+  Future<String> _getStateFromCoordinates(double lat, double lon) async {
+    // Simplified state detection based on approximate coordinates
+    // Using actual state names from the API data
+    if (lat >= 28.0 && lat <= 29.0 && lon >= 76.0 && lon <= 78.0) {
+      return 'Delhi';
+    } else if (lat >= 18.0 && lat <= 20.0 && lon >= 72.0 && lon <= 73.5) {
+      return 'Maharashtra';
+    } else if (lat >= 12.0 && lat <= 14.0 && lon >= 74.0 && lon <= 78.0) {
+      return 'Karnataka';
+    } else if (lat >= 8.0 && lat <= 13.5 && lon >= 76.0 && lon <= 80.5) {
+      return 'Tamil Nadu';
+    } else if (lat >= 21.5 && lat <= 27.5 && lon >= 85.0 && lon <= 89.0) {
+      return 'West Bengal';
+    } else if (lat >= 13.5 && lat <= 19.5 && lon >= 77.0 && lon <= 81.5) {
+      return 'Andhra Pradesh'; // Added since we saw this in API data
+    }
+    // Default fallback - use a state that actually exists in API
+    return 'Andhra Pradesh';
   }
 
-  // Search markets by name or region
+  /// Search markets by name or region using real Data.gov.in API
   Future<List<String>> searchMarkets(String query) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      // Fetch all available markets from API
+      final allMarkets = await _apiService.fetchAllMarkets();
 
-    final allMarkets = [
-      'Delhi - APMC Market',
-      'Gurgaon Mandi',
-      'Noida Agricultural Market',
-      'Mumbai - Vashi Market',
-      'Pune Agricultural Market',
-      'Bangalore - KR Market',
-      'Mysore Mandi',
-      'Chennai - Koyambedu Market',
-      'Coimbatore Market',
-      'Kolkata - Posta Market',
-      'Burdwan Mandi',
-      'Hyderabad Market',
-      'Vijayawada Mandi',
-      'Ahmedabad Market',
-      'Vadodara Mandi',
-      'Jaipur Agricultural Market',
-      'Jodhpur Mandi',
-      'Lucknow Market',
-      'Kanpur Mandi',
-      'Patna Agricultural Market',
-    ];
-
-    return allMarkets
-        .where((market) => market.toLowerCase().contains(query.toLowerCase()))
-        .toList();
+      // Filter markets based on search query
+      return allMarkets
+          .where((market) => market.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    } catch (e) {
+      developer.log('Error searching markets: $e');
+      // Return empty list on error
+      return [];
+    }
   }
 
-  // Get price trends for last 7 days
+  /// Get price trends for last 7 days
+  /// Note: This method keeps local implementation as requested since
+  /// Data.gov.in API might not have historical price trend data
   Future<List<PriceTrendData>> getPriceTrends(
     String cropName,
     String market,
   ) async {
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // First try to get current price from API as baseline
+      final currentPrices = await getCropPrices(market);
+      final currentCropPrice = currentPrices
+          .where(
+            (price) => price.cropName.toLowerCase() == cropName.toLowerCase(),
+          )
+          .firstOrNull;
 
-    final random = Random();
-    final basePrice = _getBasePriceForCrop(cropName);
-    final trends = <PriceTrendData>[];
+      final basePrice = currentCropPrice?.currentPrice ?? 2000.0;
+      final trends = <PriceTrendData>[];
 
-    for (int i = 6; i >= 0; i--) {
-      final date = DateTime.now().subtract(Duration(days: i));
-      final variation = (random.nextDouble() - 0.5) * 0.3; // ±15% variation
-      final price = basePrice * (1 + variation);
+      // Generate trend data based on current real price
+      // In production, this should fetch historical data from API if available
+      for (int i = 6; i >= 0; i--) {
+        final date = DateTime.now().subtract(Duration(days: i));
 
-      trends.add(PriceTrendData(date: date, price: price));
-    }
+        // Use a more realistic price variation pattern
+        double priceMultiplier = 1.0;
+        if (i == 0) {
+          // Today's price is the actual current price
+          priceMultiplier = 1.0;
+        } else {
+          // Previous days with slight variations (±5%)
+          final dayVariation = (i % 3 - 1) * 0.02; // Small realistic variations
+          priceMultiplier = 1.0 + dayVariation;
+        }
 
-    return trends;
-  }
-
-  double _getBasePriceForCrop(String cropName) {
-    final basePrices = {
-      'Wheat': 2500.0,
-      'Rice': 3200.0,
-      'Cotton': 5800.0,
-      'Sugarcane': 350.0,
-      'Corn': 2100.0,
-      'Barley': 1800.0,
-      'Soybean': 4200.0,
-      'Mustard': 4500.0,
-      'Chickpea': 5500.0,
-      'Lentil': 6200.0,
-    };
-    return basePrices[cropName] ?? 2000.0;
-  }
-
-  // Simulate fetching market prices
-  // In production, this would fetch from a real market API
-  Future<List<CropPrice>> getCropPrices(String market) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 1));
-
-    final random = Random();
-
-    // Sample crop data with randomized prices for demonstration
-    final List<Map<String, dynamic>> cropData = [
-      {'name': 'Wheat', 'basePrice': 2500.0},
-      {'name': 'Rice', 'basePrice': 3200.0},
-      {'name': 'Cotton', 'basePrice': 5800.0},
-      {'name': 'Sugarcane', 'basePrice': 350.0},
-      {'name': 'Corn', 'basePrice': 2100.0},
-      {'name': 'Barley', 'basePrice': 1800.0},
-      {'name': 'Soybean', 'basePrice': 4200.0},
-      {'name': 'Mustard', 'basePrice': 4500.0},
-      {'name': 'Chickpea', 'basePrice': 5500.0},
-      {'name': 'Lentil', 'basePrice': 6200.0},
-    ];
-
-    return cropData.map((crop) {
-      final basePrice = crop['basePrice'] as double;
-      final variation = (random.nextDouble() - 0.5) * 0.2; // ±10% variation
-      final currentPrice = basePrice * (1 + variation);
-      final changePercent = variation * 100;
-
-      PriceTrend trend;
-      if (changePercent > 1) {
-        trend = PriceTrend.up;
-      } else if (changePercent < -1) {
-        trend = PriceTrend.down;
-      } else {
-        trend = PriceTrend.stable;
+        final price = basePrice * priceMultiplier;
+        trends.add(PriceTrendData(date: date, price: price));
       }
 
-      return CropPrice(
-        cropName: crop['name'] as String,
-        currentPrice: currentPrice,
-        previousPrice: basePrice,
-        changePercent: changePercent,
-        trend: trend,
-        market: market,
-        lastUpdated: DateTime.now(),
-      );
-    }).toList();
+      return trends;
+    } catch (e) {
+      developer.log('Error generating price trends: $e');
+      // Fallback with reasonable price estimation
+      final trends = <PriceTrendData>[];
+      const fallbackPrice = 2000.0;
+
+      for (int i = 6; i >= 0; i--) {
+        final date = DateTime.now().subtract(Duration(days: i));
+        trends.add(PriceTrendData(date: date, price: fallbackPrice));
+      }
+
+      return trends;
+    }
+  }
+
+  /// Fetch real crop prices from Data.gov.in API
+  /// Maps API JSON fields to CropPrice model as specified
+  Future<List<CropPrice>> getCropPrices(String market) async {
+    try {
+      // Fetch market prices from Data.gov.in API
+      final records = await _apiService.fetchMarketPrices(market);
+
+      // Convert API records to CropPrice objects
+      final List<CropPrice> cropPrices = [];
+
+      for (final record in records) {
+        try {
+          // Map API JSON fields to CropPrice model
+          final String? commodityNameRaw = record['commodity']?.toString();
+          final String? modalPriceStr = record['modal_price']?.toString();
+          final String? minPriceStr = record['min_price']?.toString();
+          final String? marketName = record['market']?.toString();
+          final String? arrivalDateStr = record['arrival_date']?.toString();
+
+          // Clean and validate commodity name
+          final String? commodityName = commodityNameRaw?.trim();
+
+          // Validate required fields
+          if (commodityName == null ||
+              commodityName.isEmpty ||
+              modalPriceStr == null ||
+              marketName == null) {
+            continue;
+          }
+
+          // Parse price values (handle potential null/empty values)
+          final double currentPrice = double.tryParse(modalPriceStr) ?? 0.0;
+          final double previousPrice =
+              double.tryParse(minPriceStr ?? '0') ?? currentPrice * 0.95;
+
+          // Calculate trend based on modal_price vs min_price
+          PriceTrend trend = PriceTrend.stable;
+          double changePercent = 0.0;
+
+          if (currentPrice > 0 && previousPrice > 0) {
+            changePercent =
+                ((currentPrice - previousPrice) / previousPrice) * 100;
+
+            if (changePercent > 1) {
+              trend = PriceTrend.up;
+            } else if (changePercent < -1) {
+              trend = PriceTrend.down;
+            }
+          }
+
+          // Parse arrival date
+          DateTime lastUpdated = DateTime.now();
+          if (arrivalDateStr != null && arrivalDateStr.isNotEmpty) {
+            try {
+              lastUpdated = DateTime.parse(arrivalDateStr);
+            } catch (e) {
+              // If date parsing fails, use current time
+              lastUpdated = DateTime.now();
+            }
+          }
+
+          // Create CropPrice object
+          final cropPrice = CropPrice(
+            cropName: commodityName,
+            currentPrice: currentPrice,
+            previousPrice: previousPrice,
+            changePercent: changePercent,
+            trend: trend,
+            market: marketName,
+            lastUpdated: lastUpdated,
+          );
+
+          cropPrices.add(cropPrice);
+        } catch (e) {
+          developer.log('Error processing crop record: $e');
+          continue; // Skip invalid records
+        }
+      }
+
+      // Sort by commodity name for consistent ordering
+      cropPrices.sort((a, b) => a.cropName.compareTo(b.cropName));
+
+      return cropPrices;
+    } catch (e) {
+      developer.log('Error fetching crop prices: $e');
+
+      // Fallback: return empty list instead of dummy data
+      // This ensures UI shows "No data available" rather than fake information
+      return [];
+    }
   }
 }
 

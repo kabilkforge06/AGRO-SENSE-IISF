@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/app_state_service.dart';
 import '../services/weather_service.dart';
 import 'ai_chat_screen.dart';
+import 'schemes/schemes_list_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -58,8 +59,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Farming Assist'),
+        title: GestureDetector(
+          onLongPress: () {
+            // Hidden admin feature - long press on title
+            Navigator.pushNamed(context, '/scheme-sync-admin');
+          },
+          child: const Text('Farming Assist'),
+        ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.admin_panel_settings),
+            tooltip: 'Scheme Admin',
+            onPressed: () {
+              Navigator.pushNamed(context, '/scheme-sync-admin');
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
@@ -156,7 +170,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               crossAxisCount: 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 1.5,
+              childAspectRatio: 1.3,
               children: [
                 _buildActionCard(
                   context,
@@ -197,6 +211,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Colors.purple,
                   () {
                     // Will be handled by bottom navigation
+                  },
+                ),
+                _buildActionCard(
+                  context,
+                  'Govt Schemes',
+                  Icons.account_balance,
+                  Colors.teal,
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SchemesListScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildActionCard(
+                  context,
+                  'Weather',
+                  Icons.wb_cloudy,
+                  Colors.cyan,
+                  () {
+                    // Weather is already shown on dashboard
                   },
                 ),
               ],

@@ -6,17 +6,27 @@ import 'screens/login_screen.dart';
 import 'screens/language_selection_screen.dart';
 import 'screens/land_selection_screen.dart';
 import 'screens/dashboard_screen.dart';
-import 'screens/advisory_screen.dart'; // Ensure this file exists and exports AdvisoryScreen
+import 'screens/advisory_screen.dart';
 import 'screens/scan_leaf_screen.dart';
 import 'screens/market_screen.dart';
 import 'screens/ai_chat_screen.dart';
+import 'screens/schemes/scheme_sync_admin_screen.dart';
 import 'services/app_state_service.dart';
+import 'services/mongodb_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
+  // Initialize Firebase for authentication
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize database service (in-memory mode)
+  try {
+    await MongoDBService.connect();
+    print('Database service initialized successfully');
+  } catch (e) {
+    print('Failed to initialize database service: $e');
+  }
 
   runApp(
     ChangeNotifierProvider(
@@ -68,6 +78,7 @@ class FarmingAssistApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/dashboard': (context) => const MainNavigationScreen(),
         '/ai-chat': (context) => const AIChatScreen(),
+        '/scheme-sync-admin': (context) => const SchemeSyncAdminScreen(),
       },
     );
   }
@@ -117,4 +128,3 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 }
-

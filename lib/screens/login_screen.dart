@@ -108,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Farming Assist',
+                    'AgroSense AI',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -117,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Your AI-powered farming companion',
+                    'Intelligent Farming Assistant for Crop Health',
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.green.shade600,
@@ -255,17 +255,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 side: BorderSide(color: Colors.grey.shade300),
                               ),
                             ),
-                            icon: Container(
-                              width: 20,
-                              height: 20,
-                              decoration: const BoxDecoration(
-                                image: DecorationImage(
-                                  image: NetworkImage(
-                                    'https://developers.google.com/identity/images/g-logo.png',
-                                  ),
-                                ),
-                              ),
-                            ),
+                            icon: const Icon(Icons.login, size: 20),
                             label: const Text(
                               'Continue with Google',
                               style: TextStyle(

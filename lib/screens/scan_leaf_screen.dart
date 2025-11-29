@@ -1,8 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../services/disease_detection_service.dart';
 
 class ScanLeafScreen extends StatefulWidget {
@@ -13,59 +11,19 @@ class ScanLeafScreen extends StatefulWidget {
 }
 
 class _ScanLeafScreenState extends State<ScanLeafScreen> {
-  CameraController? _cameraController;
-  List<CameraDescription>? _cameras;
-  bool _isCameraInitialized = false;
   final ImagePicker _imagePicker = ImagePicker();
   final DiseaseDetectionService _diseaseService = DiseaseDetectionService();
 
-  @override
-  void initState() {
-    super.initState();
-    _initializeCamera();
-  }
-
-  Future<void> _initializeCamera() async {
-    // Request camera permission
-    final cameraPermission = await Permission.camera.request();
-    if (cameraPermission != PermissionStatus.granted) {
-      return;
-    }
-
-    try {
-      _cameras = await availableCameras();
-      if (_cameras!.isNotEmpty) {
-        _cameraController = CameraController(
-          _cameras!.first,
-          ResolutionPreset.high,
-        );
-        await _cameraController!.initialize();
-        if (mounted) {
-          setState(() {
-            _isCameraInitialized = true;
-          });
-        }
-      }
-    } catch (e) {
-      // Print error for debugging
-      debugPrint('Error initializing camera: $e');
-    }
-  }
-
-  @override
-  void dispose() {
-    _cameraController?.dispose();
-    super.dispose();
-  }
-
   Future<void> _takePicture() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) {
-      return;
-    }
-
     try {
-      final XFile image = await _cameraController!.takePicture();
-      await _analyzeImage(File(image.path));
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+      );
+
+      if (image != null) {
+        await _analyzeImage(File(image.path));
+      }
     } catch (e) {
       _showErrorDialog('Failed to capture image: $e');
     }
@@ -276,158 +234,143 @@ class _ScanLeafScreenState extends State<ScanLeafScreen> {
           ),
         ],
       ),
-      body: _isCameraInitialized
-          ? Stack(
-              children: [
-                // Camera Preview
-                SizedBox.expand(child: CameraPreview(_cameraController!)),
+      body: Stack(
+        children: [
+          // Background
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.green.shade50, Colors.white],
+              ),
+            ),
+          ),
 
-                // Overlay with scanning frame
-                Center(
-                  child: Container(
-                    width: 250,
-                    height: 250,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white, width: 2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Stack(
-                      children: [
-                        // Corner indicators
-                        Positioned(
-                          top: -1,
-                          left: -1,
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            decoration: const BoxDecoration(
-                              color: Colors.green,
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: -1,
-                          right: -1,
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            decoration: const BoxDecoration(
-                              color: Colors.green,
-                              borderRadius: BorderRadius.only(
-                                topRight: Radius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: -1,
-                          left: -1,
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            decoration: const BoxDecoration(
-                              color: Colors.green,
-                              borderRadius: BorderRadius.only(
-                                bottomLeft: Radius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: -1,
-                          right: -1,
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            decoration: const BoxDecoration(
-                              color: Colors.green,
-                              borderRadius: BorderRadius.only(
-                                bottomRight: Radius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Instructions
-                Positioned(
-                  top: 100,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      'Position the leaf within the frame and tap the capture button',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-
-                // Capture Button
-                Positioned(
-                  bottom: 50,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: GestureDetector(
-                      onTap: _takePicture,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.green, width: 4),
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt,
-                          color: Colors.green,
-                          size: 32,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            )
-          : Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+          // Overlay with scanning frame
+          Center(
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white, width: 2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Stack(
                 children: [
-                  const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                  // Corner indicators
+                  Positioned(
+                    top: -1,
+                    left: -1,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                        ),
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  const Text('Initializing camera...'),
-                  const SizedBox(height: 32),
-                  ElevatedButton.icon(
-                    onPressed: _pickImageFromGallery,
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text('Pick from Gallery'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
+                  Positioned(
+                    top: -1,
+                    right: -1,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.only(
+                          topRight: Radius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: -1,
+                    left: -1,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: -1,
+                    right: -1,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.only(
+                          bottomRight: Radius.circular(12),
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+          ),
+
+          // Instructions
+          Positioned(
+            top: 100,
+            left: 0,
+            right: 0,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Position the leaf within the frame and tap the capture button',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+
+          // Capture Button
+          Positioned(
+            bottom: 50,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: _takePicture,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.green, width: 4),
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt,
+                    color: Colors.green,
+                    size: 32,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

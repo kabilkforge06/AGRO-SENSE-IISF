@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../services/gemini_service.dart';
+import '../widgets/voice_input_widget.dart';
+import 'ai_chat_debug_screen.dart';
 
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({super.key});
@@ -14,10 +17,16 @@ class _AIChatScreenState extends State<AIChatScreen> {
   final List<ChatMessage> _messages = [];
   final GeminiService _geminiService = GeminiService();
   bool _isLoading = false;
+  bool _showVoiceInput = false;
+  String _currentLanguage = 'en-US';
 
   @override
   void initState() {
     super.initState();
+    _initializeChat();
+  }
+
+  Future<void> _initializeChat() async {
     // Add welcome message
     _messages.add(
       ChatMessage(
@@ -27,6 +36,60 @@ class _AIChatScreenState extends State<AIChatScreen> {
         timestamp: DateTime.now(),
       ),
     );
+
+    // Test API connection in background
+    _testApiConnection();
+  }
+
+  Future<void> _testApiConnection() async {
+    try {
+      if (_geminiService.isApiKeyConfigured()) {
+        final isConnected = await _geminiService.testConnection();
+        if (!isConnected) {
+          if (mounted) {
+            setState(() {
+              _messages.add(
+                ChatMessage(
+                  text:
+                      "⚠️ Note: AI service connection test failed. Responses will be in demo mode. Please check your internet connection or contact support if you need full AI assistance.",
+                  isUser: false,
+                  timestamp: DateTime.now(),
+                ),
+              );
+            });
+          }
+        } else {
+          if (mounted) {
+            setState(() {
+              _messages.add(
+                ChatMessage(
+                  text:
+                      "✅ AI service is ready! You can ask me anything about farming.",
+                  isUser: false,
+                  timestamp: DateTime.now(),
+                ),
+              );
+            });
+          }
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _messages.add(
+              ChatMessage(
+                text:
+                    "⚙️ AI service is running in demo mode. Responses will be simulated examples. For full AI capabilities, please configure the API key.",
+                isUser: false,
+                timestamp: DateTime.now(),
+              ),
+            );
+          });
+        }
+      }
+    } catch (e) {
+      // Silent fail - don't interrupt user experience
+      debugPrint('API connection test error: $e');
+    }
   }
 
   @override
@@ -51,7 +114,12 @@ class _AIChatScreenState extends State<AIChatScreen> {
     _scrollToBottom();
 
     try {
+      debugPrint(
+        '📤 Sending message to Gemini: ${message.substring(0, message.length > 50 ? 50 : message.length)}...',
+      );
       final response = await _geminiService.sendMessage(message);
+      debugPrint('📥 Received response from Gemini');
+
       setState(() {
         _messages.add(
           ChatMessage(text: response, isUser: false, timestamp: DateTime.now()),
@@ -59,11 +127,12 @@ class _AIChatScreenState extends State<AIChatScreen> {
         _isLoading = false;
       });
     } catch (e) {
+      debugPrint('💥 Error in _sendMessage: $e');
       setState(() {
         _messages.add(
           ChatMessage(
             text:
-                "Sorry, I'm having trouble connecting right now. Please check your internet connection and try again.",
+                "I apologize, but I'm experiencing technical difficulties. Please try again in a moment, or check your internet connection. Error details have been logged for debugging.",
             isUser: false,
             timestamp: DateTime.now(),
           ),
@@ -73,6 +142,26 @@ class _AIChatScreenState extends State<AIChatScreen> {
     }
 
     _scrollToBottom();
+  }
+
+  void _handleVoiceResult(String text) {
+    // Treat all voice input as chat messages
+    _messageController.text = text;
+    _sendMessage();
+  }
+
+  void _toggleVoiceInput() {
+    setState(() {
+      _showVoiceInput = !_showVoiceInput;
+    });
+  }
+
+  void _changeLanguage(String language) async {
+    setState(() {
+      _currentLanguage = language;
+    });
+    // Update language in GeminiService
+    await _geminiService.setLanguage(language);
   }
 
   void _scrollToBottom() {
@@ -95,6 +184,16 @@ class _AIChatScreenState extends State<AIChatScreen> {
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         actions: [
+          // Voice input toggle
+          IconButton(
+            icon: Icon(
+              _showVoiceInput ? Icons.keyboard : Icons.mic,
+              color: _showVoiceInput ? Colors.red : Colors.white,
+            ),
+            onPressed: _toggleVoiceInput,
+            tooltip: _showVoiceInput ? 'Hide Voice Input' : 'Show Voice Input',
+          ),
+          // Clear chat button
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: () {
@@ -110,7 +209,22 @@ class _AIChatScreenState extends State<AIChatScreen> {
                 );
               });
             },
+            tooltip: 'Clear Chat',
           ),
+          // Debug button (only shown in debug mode)
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.bug_report),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AIChatDebugScreen(),
+                  ),
+                );
+              },
+              tooltip: 'Debug AI Chat',
+            ),
         ],
       ),
       body: Column(
@@ -129,6 +243,25 @@ class _AIChatScreenState extends State<AIChatScreen> {
               },
             ),
           ),
+
+          // Voice Input Area
+          if (_showVoiceInput)
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+              ),
+              child: VoiceInputWidget(
+                onVoiceResult: _handleVoiceResult,
+                currentLanguage: _currentLanguage,
+                onLanguageChanged: _changeLanguage,
+                enabled: !_isLoading,
+              ),
+            ),
 
           // Input Area
           Container(
@@ -149,7 +282,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                   child: TextField(
                     controller: _messageController,
                     decoration: InputDecoration(
-                      hintText: 'Ask about farming, crops, diseases...',
+                      hintText: _showVoiceInput
+                          ? 'Type or use voice input above...'
+                          : 'Ask about farming, crops, diseases...',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide.none,
