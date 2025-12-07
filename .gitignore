@@ -64,3 +64,11 @@ build/
 
 # Web build artifacts
 /web/build/
+
+# Environment variables and API keys
+.env
+.env.local
+*.key
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
