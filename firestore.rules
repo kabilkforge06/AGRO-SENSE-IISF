@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow authenticated users to read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow all authenticated users to read schemes
+    match /government_schemes/{schemeId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null; // For admin sync operations
+    }
+    
+    // Allow all authenticated users to read scheme metadata
+    match /scheme_metadata/{document} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null; // For admin sync operations
+    }
+    
+    // Allow authenticated users to read/write market data
+    match /market_prices/{priceId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    
+    // Allow authenticated users to read/write their chat history
+    match /chat_history/{userId}/{chatId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow authenticated users to read/write their disease scans
+    match /disease_scans/{userId}/{scanId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow authenticated users to read advisory content
+    match /advisory_content/{contentId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+  }
+}

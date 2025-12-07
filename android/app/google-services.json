@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "988711799748",
+    "project_id": "agro-sense-70d67",
+    "storage_bucket": "agro-sense-70d67.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:988711799748:android:ba5b3d33e064574185b291",
+        "android_client_info": {
+          "package_name": "com.agrosense.farmingassist"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "988711799748-hphap3dqnbotfi7v2npmgc335eurmb3a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAoUpa4M1H3Dtcc1lyDPEhBPkAO7-MdRvw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "988711799748-hphap3dqnbotfi7v2npmgc335eurmb3a.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "988711799748-pc45p1pu13qj41tbkhrfkdvuku8dofv4.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.agrosense.farmingassist"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
